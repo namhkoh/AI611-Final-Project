@@ -4,6 +4,26 @@ This is an implementation of [Denoising Diffusion Policy Optimization (DDPO)](ht
 
 ![DDPO](teaser.jpg)
 
+## 🔥 NEW: VLM Comparison Framework
+
+**Beyond LLaVA: Exploring Multiple Vision-Language Models**
+
+We've extended DDPO to support multiple VLMs with comprehensive robustness analysis:
+
+- **🔍 Multi-VLM Support**: LLaVA, BLIP-2, InstructBLIP, CLIP
+- **🛡️ Robustness Analysis**: Typographic attacks, adversarial patches, corruption testing  
+- **⚡ Efficiency Optimization**: Free-tier GPU support, memory-aware loading
+- **📊 Interactive Demo**: Colab notebook with visualizations
+
+**Quick Start:**
+- 📓 **[Interactive Colab Notebook](notebooks/VLM_Comparison_Demo.ipynb)** (Recommended)
+- 🔧 **Command Line**: `python scripts/vlm_comparison_demo.py --auto-select-models --test-robustness`
+- 📖 **[Full Documentation](VLM_COMPARISON_README.md)**
+
+Key findings: LLaVA vulnerable to typographic attacks, BLIP-2 more robust, CLIP most efficient.
+
+---
+
 ## Installation
 Requires Python 3.10 or newer.
 
@@ -20,6 +40,21 @@ accelerate launch scripts/train.py
 This will immediately start finetuning Stable Diffusion v1.5 for compressibility on all available GPUs using the config from `config/base.py`. It should work as long as each GPU has at least 10GB of memory. If you don't want to log into wandb, you can run `wandb disabled` before the above command.
 
 Please note that the default hyperparameters in `config/base.py` are not meant to achieve good performance, they are just to get the code up and running as fast as possible. I would not expect to get good results without using a much larger number of samples per epoch and gradient accumulation steps.
+
+### VLM Experiments
+
+Run DDPO with different VLMs:
+
+```bash
+# CLIP similarity reward (most efficient)
+accelerate launch scripts/train.py --config config/vlm_comparison.py:clip_similarity_experiment
+
+# BLIP-2 alignment reward (balanced performance)
+accelerate launch scripts/train.py --config config/vlm_comparison.py:blip2_experiment
+
+# Robustness-focused training
+accelerate launch scripts/train.py --config config/vlm_comparison.py:robustness_experiment
+```
 
 ## Important Hyperparameters
 

@@ -1,0 +1,83 @@
+name: ddpo-vlm
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  # Python
+  - python=3.10
+
+  # Core ML frameworks
+  - pytorch=2.1.0
+  - torchvision=0.16.0
+  - torchaudio=2.1.0
+  - pytorch-cuda=11.8
+
+  # Core scientific computing
+  - numpy=1.24.3
+  - scipy=1.11.1
+  - pillow=10.0.0
+
+  # Data science
+  - pandas=2.0.3
+  - matplotlib=3.7.2
+  - seaborn=0.12.2
+
+  # Development tools
+  - jupyter
+  - ipykernel
+  - git
+
+  # System utilities
+  - ffmpeg  # For video processing if needed
+
+  # Install via pip (in the pip section below)
+  - pip
+
+  - pip:
+    # Hugging Face ecosystem
+    - transformers>=4.37.0
+    - accelerate>=0.25.0
+    - diffusers>=0.26.0
+    - datasets>=2.14.0
+
+    # Additional ML libraries
+    - timm  # Image models
+    - sentencepiece  # Tokenization
+
+    # VLM-specific dependencies
+    - einops  # Tensor operations
+    - safetensors  # Safe model loading
+
+    # Configuration and utilities
+    - ml-collections
+    - omegaconf
+    - hydra-core
+
+    # Logging and monitoring
+    - wandb
+    - tensorboard
+
+    # Development and testing
+    - pytest
+    - pytest-cov
+    - black
+    - flake8
+    - isort
+
+    # Additional utilities
+    - tqdm
+    - rich  # Better terminal output
+    - typer  # CLI framework
+    - requests
+    - aiohttp  # Async HTTP for better performance
+
+    # Image processing extras
+    - opencv-python
+    - imageio
+    - scikit-image
+
+    # Optional: for better performance (uncomment if needed)
+    # - xformers  # Memory efficient attention (if compatible)
+    # - bitsandbytes  # 8-bit optimization 

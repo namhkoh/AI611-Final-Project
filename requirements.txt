@@ -1,0 +1,60 @@
+# Core ML frameworks
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+
+# Hugging Face ecosystem
+transformers>=4.37.0
+accelerate>=0.25.0
+diffusers>=0.26.0
+datasets>=2.14.0
+
+# Core scientific computing
+numpy>=1.24.0
+scipy>=1.11.0
+pillow>=10.0.0
+
+# Data science and visualization
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# VLM-specific dependencies
+einops
+safetensors
+timm
+sentencepiece
+
+# Configuration and utilities
+ml-collections
+omegaconf
+hydra-core
+
+# Logging and monitoring
+wandb
+tensorboard
+
+# Additional utilities
+tqdm
+rich
+typer
+requests
+aiohttp
+
+# Image processing
+opencv-python
+imageio
+scikit-image
+
+# Development tools
+jupyter
+ipykernel
+pytest
+pytest-cov
+black
+flake8
+isort
+
+# Optional performance optimizations (uncomment if compatible)
+# xformers  # Memory efficient attention
+# bitsandbytes  # 8-bit optimization 
