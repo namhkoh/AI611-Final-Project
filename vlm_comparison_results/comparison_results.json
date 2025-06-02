@@ -1,0 +1,110 @@
+{
+  "models_tested": [
+    "clip"
+  ],
+  "model_info": {
+    "llava-1.5": {
+      "advantages": [
+        "Strong instruction following",
+        "Good at detailed image descriptions",
+        "Handles complex reasoning tasks",
+        "Large training dataset"
+      ],
+      "disadvantages": [
+        "Large memory footprint (~13B params)",
+        "Susceptible to typographic attacks",
+        "Slower inference time",
+        "May hallucinate details"
+      ],
+      "robustness": {
+        "typographic_attack": "vulnerable",
+        "adversarial_patches": "moderate",
+        "image_corruption": "good",
+        "prompt_injection": "vulnerable"
+      },
+      "memory_gb": 26,
+      "params": "13B"
+    },
+    "blip2": {
+      "advantages": [
+        "Efficient architecture",
+        "Good image captioning",
+        "Faster inference than LLaVA",
+        "Better OOD generalization"
+      ],
+      "disadvantages": [
+        "Limited instruction following",
+        "Less detailed responses",
+        "Weaker reasoning capabilities",
+        "Limited conversational ability"
+      ],
+      "robustness": {
+        "typographic_attack": "moderate",
+        "adversarial_patches": "good",
+        "image_corruption": "very good",
+        "prompt_injection": "good"
+      },
+      "memory_gb": 15,
+      "params": "7B"
+    },
+    "instructblip": {
+      "advantages": [
+        "Good instruction following",
+        "Balanced performance/efficiency",
+        "Strong on VQA tasks",
+        "Better robustness than LLaVA"
+      ],
+      "disadvantages": [
+        "Less creative responses",
+        "Weaker on complex reasoning",
+        "Limited context length",
+        "Less detailed descriptions"
+      ],
+      "robustness": {
+        "typographic_attack": "good",
+        "adversarial_patches": "good",
+        "image_corruption": "very good",
+        "prompt_injection": "good"
+      },
+      "memory_gb": 12,
+      "params": "7B"
+    },
+    "clip": {
+      "advantages": [
+        "Very efficient",
+        "Good image-text alignment",
+        "Fast inference",
+        "Strong zero-shot capabilities"
+      ],
+      "disadvantages": [
+        "No text generation",
+        "Limited to similarity scoring",
+        "Weak on complex scenes",
+        "Poor fine-grained understanding"
+      ],
+      "robustness": {
+        "typographic_attack": "very good",
+        "adversarial_patches": "moderate",
+        "image_corruption": "good",
+        "prompt_injection": "not applicable"
+      },
+      "memory_gb": 2,
+      "params": "400M"
+    }
+  },
+  "basic_functionality": {
+    "clip": [
+      "Similarity score: 0.2614",
+      "Similarity score: 0.2435",
+      "Similarity score: 0.2452",
+      "Similarity score: 0.2436"
+    ]
+  },
+  "robustness": {
+    "clip": {
+      "typographic": 0.5,
+      "adversarial_patch": 0.5,
+      "corruption": 0.5
+    }
+  }
+}
