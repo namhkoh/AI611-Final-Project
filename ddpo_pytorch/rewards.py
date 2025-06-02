@@ -187,3 +187,116 @@ def llava_bertscore():
         return np.array(all_scores), {k: np.array(v) for k, v in all_info.items()}
 
     return _fn
+
+
+# New VLM reward functions
+def blip2_alignment():
+    """BLIP-2 based reward for prompt-image alignment"""
+    from ddpo_pytorch.vlm_comparison import VLMComparator
+    
+    comparator = VLMComparator()
+    comparator.load_model("blip2")
+    
+    def _fn(images, prompts, metadata):
+        if isinstance(images, torch.Tensor):
+            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
+        
+        images = [Image.fromarray(image) for image in images]
+        scores = []
+        responses = []
+        
+        for image, prompt in zip(images, prompts):
+            # Generate description
+            description = comparator.generate_response("blip2", image, "Describe this image:")
+            
+            # Calculate similarity between prompt and description
+            score = comparator._calculate_text_similarity(prompt, description)
+            scores.append(score)
+            responses.append(description)
+        
+        return np.array(scores), {"responses": responses}
+    
+    return _fn
+
+
+def instructblip_reward():
+    """InstructBLIP based reward function"""
+    from ddpo_pytorch.vlm_comparison import VLMComparator
+    
+    comparator = VLMComparator()
+    comparator.load_model("instructblip")
+    
+    def _fn(images, prompts, metadata):
+        if isinstance(images, torch.Tensor):
+            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
+        
+        images = [Image.fromarray(image) for image in images]
+        scores = []
+        responses = []
+        
+        for image, prompt in zip(images, prompts):
+            # Use InstructBLIP to check if image matches prompt
+            question = f"Does this image show {prompt}? Answer yes or no."
+            response = comparator.generate_response("instructblip", image, question)
+            
+            # Simple scoring based on response
+            score = 1.0 if "yes" in response.lower() else 0.0
+            scores.append(score)
+            responses.append(response)
+        
+        return np.array(scores), {"responses": responses}
+    
+    return _fn
+
+
+def clip_similarity():
+    """CLIP-based similarity reward"""
+    from ddpo_pytorch.vlm_comparison import VLMComparator
+    
+    comparator = VLMComparator()
+    comparator.load_model("clip")
+    
+    def _fn(images, prompts, metadata):
+        if isinstance(images, torch.Tensor):
+            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
+        
+        images = [Image.fromarray(image) for image in images]
+        scores = []
+        
+        for image, prompt in zip(images, prompts):
+            response = comparator.generate_response("clip", image, prompt)
+            # Extract similarity score
+            score = float(response.split(":")[1].strip())
+            scores.append(score)
+        
+        return np.array(scores), {"clip_scores": scores}
+    
+    return _fn
+
+
+def vlm_robustness_reward(model_name="blip2", attack_type="typographic"):
+    """Reward function that evaluates VLM robustness to attacks"""
+    from ddpo_pytorch.vlm_comparison import VLMComparator
+    
+    comparator = VLMComparator()
+    comparator.load_model(model_name)
+    
+    def _fn(images, prompts, metadata):
+        if isinstance(images, torch.Tensor):
+            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
+        
+        images = [Image.fromarray(image) for image in images] 
+        scores = []
+        
+        for image, prompt in zip(images, prompts):
+            # Evaluate robustness
+            robustness_result = comparator.evaluate_robustness(model_name, image, prompt, attack_type)
+            scores.append(robustness_result["robustness_score"])
+        
+        return np.array(scores), {"robustness_type": attack_type}
+    
+    return _fn
