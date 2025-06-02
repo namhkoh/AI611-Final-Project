@@ -1,6 +1,7 @@
 {
   "models_tested": [
-    "clip"
+    "clip",
+    "instructblip"
   ],
   "model_info": {
     "llava-1.5": {
@@ -105,6 +106,58 @@
       "typographic": 0.5,
       "adversarial_patch": 0.5,
       "corruption": 0.5
+    }
+  },
+  "efficiency": {
+    "clip": {
+      "avg_inference_time": 0.03925609588623047,
+      "memory_usage_gb": 2
+    }
+  },
+  "reward_functions": {
+    "clip": {
+      "scores": [
+        0.2614,
+        0.2435,
+        0.2452,
+        0.2436
+      ],
+      "prompts": [
+        "a cat",
+        "a dog",
+        "a bird",
+        "a fish"
+      ],
+      "info": {
+        "clip_scores": [
+          0.2614,
+          0.2435,
+          0.2452,
+          0.2436
+        ]
+      }
+    },
+    "instructblip": {
+      "scores": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "prompts": [
+        "a cat",
+        "a dog",
+        "a bird",
+        "a fish"
+      ],
+      "info": {
+        "responses": [
+          "Does this image show a cat? Answer yes or no. yes",
+          "Does this image show a dog? Answer yes or no. yes",
+          "Does this image show a bird? Answer yes or no. yes",
+          "Does this image show a fish? Answer yes or no. yes"
+        ]
+      }
     }
   }
 }
