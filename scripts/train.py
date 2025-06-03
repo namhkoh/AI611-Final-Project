@@ -143,9 +143,15 @@ def main(_):
                 block_id = int(name[len("down_blocks.")])
                 hidden_size = pipeline.unet.config.block_out_channels[block_id]
 
-            lora_attn_procs[name] = LoRAAttnProcessor(
-                hidden_size=hidden_size, cross_attention_dim=cross_attention_dim
-            )
+            # Updated for modern diffusers API
+            try:
+                # Try new API first
+                lora_attn_procs[name] = LoRAAttnProcessor(
+                    hidden_size=hidden_size, cross_attention_dim=cross_attention_dim
+                )
+            except TypeError:
+                # Fallback for newer API that doesn't take these parameters
+                lora_attn_procs[name] = LoRAAttnProcessor()
         pipeline.unet.set_attn_processor(lora_attn_procs)
 
         # this is a hack to synchronize gradients properly. the module that registers the parameters we care about (in
