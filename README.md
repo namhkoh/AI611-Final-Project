@@ -8,7 +8,7 @@ This is an implementation of [Denoising Diffusion Policy Optimization (DDPO)](ht
 Requires Python 3.10 or newer.
 
 ```bash
-git clone git@github.com:chaeraemong/DDPO.git
+git clone git@github.com:namhkoh/AI611-Final-Project.git
 
 conda create -n ddpo
 conda activate ddpo
