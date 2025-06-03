@@ -48,7 +48,7 @@ def clip_similarity_experiment():
     
     config.pretrained.model = "CompVis/stable-diffusion-v1-4"
     config.num_epochs = 30
-    config.use_lora = True
+    config.use_lora = False  # Temporarily disable LoRA for compatibility
     config.save_freq = 10
     
     # Very small batch sizes for maximum compatibility
@@ -76,8 +76,8 @@ def instructblip_experiment():
     config = base.get_config()
     
     config.pretrained.model = "CompVis/stable-diffusion-v1-4"
-    config.num_epochs = 40
-    config.use_lora = True
+    config.num_epochs = 30  # Match CLIP experiment for fair comparison
+    config.use_lora = False  # Temporarily disable LoRA for compatibility
     config.save_freq = 10
     
     config.sample.batch_size = 2

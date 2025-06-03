@@ -157,11 +157,17 @@ def main(_):
         # this is a hack to synchronize gradients properly. the module that registers the parameters we care about (in
         # this case, AttnProcsLayers) needs to also be used for the forward pass. AttnProcsLayers doesn't have a
         # `forward` method, so we wrap it to add one and capture the rest of the unet parameters using a closure.
-        class _Wrapper(AttnProcsLayers):
-            def forward(self, *args, **kwargs):
-                return pipeline.unet(*args, **kwargs)
-
-        unet = _Wrapper(pipeline.unet.attn_processors)
+        
+        # Modern diffusers compatibility: handle LoRA differently
+        try:
+            class _Wrapper(AttnProcsLayers):
+                def forward(self, *args, **kwargs):
+                    return pipeline.unet(*args, **kwargs)
+            unet = _Wrapper(pipeline.unet.attn_processors)
+        except (TypeError, AttributeError):
+            # Fallback for modern diffusers where LoRAAttnProcessor is not a Module
+            # Just use the UNet directly and rely on the set LoRA processors
+            unet = pipeline.unet
     else:
         unet = pipeline.unet
 
@@ -169,8 +175,13 @@ def main(_):
 
     def save_model_hook(models, weights, output_dir):
         assert len(models) == 1
-        if config.use_lora and isinstance(models[0], AttnProcsLayers):
-            pipeline.unet.save_attn_procs(output_dir)
+        if config.use_lora:
+            # Handle both wrapped and unwrapped cases
+            if isinstance(models[0], AttnProcsLayers):
+                pipeline.unet.save_attn_procs(output_dir)
+            else:
+                # Direct UNet case - save LoRA weights
+                models[0].save_attn_procs(output_dir)
         elif not config.use_lora and isinstance(models[0], UNet2DConditionModel):
             models[0].save_pretrained(os.path.join(output_dir, "unet"))
         else:
@@ -179,18 +190,23 @@ def main(_):
 
     def load_model_hook(models, input_dir):
         assert len(models) == 1
-        if config.use_lora and isinstance(models[0], AttnProcsLayers):
-            # pipeline.unet.load_attn_procs(input_dir)
-            tmp_unet = UNet2DConditionModel.from_pretrained(
-                config.pretrained.model,
-                revision=config.pretrained.revision,
-                subfolder="unet",
-            )
-            tmp_unet.load_attn_procs(input_dir)
-            models[0].load_state_dict(
-                AttnProcsLayers(tmp_unet.attn_processors).state_dict()
-            )
-            del tmp_unet
+        if config.use_lora:
+            # Handle both wrapped and unwrapped cases
+            if isinstance(models[0], AttnProcsLayers):
+                # Original wrapped case
+                tmp_unet = UNet2DConditionModel.from_pretrained(
+                    config.pretrained.model,
+                    revision=config.pretrained.revision,
+                    subfolder="unet",
+                )
+                tmp_unet.load_attn_procs(input_dir)
+                models[0].load_state_dict(
+                    AttnProcsLayers(tmp_unet.attn_processors).state_dict()
+                )
+                del tmp_unet
+            else:
+                # Direct UNet case - load LoRA weights
+                models[0].load_attn_procs(input_dir)
         elif not config.use_lora and isinstance(models[0], UNet2DConditionModel):
             load_model = UNet2DConditionModel.from_pretrained(
                 input_dir, subfolder="unet"
