@@ -10,7 +10,19 @@ from typing import Optional, Tuple, Union
 import math
 import torch
 
-from diffusers.utils import randn_tensor
+# Fix for modern diffusers versions
+try:
+    from diffusers.utils import randn_tensor
+except ImportError:
+    # In newer versions, randn_tensor is in diffusers.utils.torch_utils
+    try:
+        from diffusers.utils.torch_utils import randn_tensor
+    except ImportError:
+        # Fallback: define our own randn_tensor
+        def randn_tensor(shape, generator=None, device=None, dtype=None, layout=None):
+            """Fallback implementation of randn_tensor"""
+            return torch.randn(shape, generator=generator, device=device, dtype=dtype, layout=layout)
+
 from diffusers.schedulers.scheduling_ddim import DDIMSchedulerOutput, DDIMScheduler
 
 
