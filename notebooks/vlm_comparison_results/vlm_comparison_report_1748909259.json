@@ -1,0 +1,14 @@
+{
+  "experiment_info": {
+    "models_tested": [
+      "clip",
+      "instructblip"
+    ],
+    "test_images_count": 5,
+    "timestamp": "2025-06-02 17:07:39"
+  },
+  "basic_functionality": {},
+  "robustness_analysis": {},
+  "efficiency_benchmark": {},
+  "reward_functions": {}
+}
