@@ -21,7 +21,7 @@ Hierarchical relationship between folders.
 ```bash
 /home/user
 ├── DDPO/(where codes should be run.)
-│   ├── ddpo-pytorch/
+│   ├── ddpo_pytorch/
 │   ├── config/
 │   └── (etc.)
 └── LLAVA/
