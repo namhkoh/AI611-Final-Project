@@ -2,7 +2,7 @@ from PIL import Image
 from io import BytesIO
 import pickle
 import traceback
-from LLAVA.llava_server.llava2 import load_llava
+from LLAVA.llava_server.llava import load_llava
 from LLAVA.llava_server.bertscore import load_bertscore
 import numpy as np
 import os
