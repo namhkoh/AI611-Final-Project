@@ -54,13 +54,13 @@ def tokenizer_image_token_batch(prompts, tokenizer, image_token_index=IMAGE_TOKE
     return torch.tensor(padded_encodings, dtype=torch.long)
 
 
-def load_llava(params_path):
+def load_llava(params_path, **kwargs):
     # Model
     disable_torch_init()
     model_name = get_model_name_from_path(params_path)
     model_base = None
     tokenizer, model, image_processor, context_len = load_pretrained_model(
-        params_path, model_base, model_name)
+        params_path, model_base, model_name, **kwargs)
     model.half()  # align with the format in ddpo-pytorch, using fp16
 
     if getattr(model.config, 'mm_use_im_start_end', False):

@@ -17,13 +17,14 @@ import os
 import warnings
 import shutil
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+from transformers.utils.quantization_config import BitsAndBytesConfig
 import torch
 from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 
 
-def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, **kwargs):
+def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, trust_remote_code=False, **kwargs):
     kwargs = {"device_map": device_map, **kwargs}
 
     if device != "cuda":
@@ -44,6 +45,9 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
     if use_flash_attn:
         kwargs['attn_implementation'] = 'flash_attention_2'
+
+    if trust_remote_code:
+        kwargs['trust_remote_code'] = True
 
     if 'llava' in model_name.lower():
         # Load LLaVA model
