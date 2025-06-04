@@ -16,7 +16,8 @@ root = Blueprint("root", __name__)
 
 def create_app():
     global INFERENCE_FN, BERTSCORE_FN
-    INFERENCE_FN = load_llava("liuhaotian/llava-v1.6-vicuna-7b")
+    INFERENCE_FN = load_llava(
+        "google/gemma-3-4b-it", trust_remote_code=True)
     BERTSCORE_FN = load_bertscore()
 
     app = Flask(__name__)
