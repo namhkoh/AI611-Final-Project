@@ -4,7 +4,7 @@ import numpy as np
 
 
 def load_bertscore():
-    scorer = BERTScorer("microsoft/deberta-xlarge-mnli")
+    scorer = BERTScorer("microsoft/deberta-v3-small")
 
     def compute_bertscore(
         candidates: Iterable[str], references: Iterable[str]
