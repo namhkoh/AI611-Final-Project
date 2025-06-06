@@ -131,7 +131,7 @@ def load_llava(params_path, **kwargs):
 
         # generation loop
         output_ids = []
-        key_values = initial_key_values
+        key_values = initial_out.past_key_values
         finished = torch.zeros(
             input_ids.shape[0], dtype=torch.bool, device="cuda")
         for i in range(MAX_TOKENS):
