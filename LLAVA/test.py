@@ -1,19 +1,23 @@
+import os
 import requests
-from PIL import Image
 import io
 import pickle
-import glob
 import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
-BATCH_SIZE = 18
+from concurrent.futures import ThreadPoolExecutor
+from PIL import Image
+
+BATCH_SIZE = 1
 
 # paths = glob.glob(f"target_paired_images_new_toykitchen7/*.jpg") * 100
-paths = ["monkey.png"] * 100
+paths = ["monkey.png"]
+# paths = [os.path.join("test_images", f)
+#          for f in os.listdir("test_images") if f.endswith(".JPEG")]
+
 
 def f(_):
     for i in tqdm.tqdm(range(0, len(paths), BATCH_SIZE)):
-        batch_paths = paths[i : i + BATCH_SIZE]
+        batch_paths = paths[i: i + BATCH_SIZE]
 
         jpeg_data = []
         queries = []
@@ -36,7 +40,7 @@ def f(_):
         data_bytes = pickle.dumps(data)
 
         # Send the JPEG data in an HTTP POST request to the server
-        url = "http://127.0.0.1:8085"
+        url = "http://127.0.0.1:5000"
         response = requests.post(url, data=data_bytes)
 
         # Print the response from the server
@@ -46,6 +50,7 @@ def f(_):
             print(output)
             print(score)
             print("--")
+
 
 with ThreadPoolExecutor(max_workers=8) as executor:
     for _ in executor.map(f, range(8)):

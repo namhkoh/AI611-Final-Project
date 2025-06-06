@@ -6,7 +6,7 @@ import sys
 
 import requests
 
-from LLAVA.llava.constants import LOGDIR
+from llava.constants import LOGDIR
 
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
 moderation_msg = "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
@@ -61,6 +61,7 @@ class StreamToLogger(object):
     """
     Fake file-like stream object that redirects writes to a logger instance.
     """
+
     def __init__(self, logger, log_level=logging.INFO):
         self.terminal = sys.stdout
         self.logger = logger

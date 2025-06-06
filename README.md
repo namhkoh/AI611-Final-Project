@@ -30,6 +30,16 @@ Hierarchical relationship between folders.
     ├── llava/
     └── (etc.)
 ```
+## VLM Server
+Requires Python [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
+
+```bash
+cd LLAVA
+
+poetry install
+poetry run flask run
+```
+
 
 ## Notice
 Both train.py (DDPO) and app.py (LLAVA) must be run from inside the DDPO directory.

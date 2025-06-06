@@ -2,8 +2,8 @@ from PIL import Image
 from io import BytesIO
 import pickle
 import traceback
-from LLAVA.llava_server.llava import load_llava
-from LLAVA.llava_server.bertscore import load_bertscore
+from llava_server.llava import load_llava
+from llava_server.bertscore import load_bertscore
 import numpy as np
 import os
 from flask import Flask, request, Blueprint
@@ -13,14 +13,18 @@ os.environ["NUMEXPR_MAX_THREADS"] = "64"
 
 root = Blueprint("root", __name__)
 
+
 def create_app():
     global INFERENCE_FN, BERTSCORE_FN
-    INFERENCE_FN = load_llava("liuhaotian/llava-v1.6-vicuna-7b")
+    # INFERENCE_FN = load_llava(
+    #     "google/gemma-3-4b-it", trust_remote_code=True)
+    INFERENCE_FN = load_llava("liuhaotian/llava-v1.5-7b")
     BERTSCORE_FN = load_bertscore()
 
     app = Flask(__name__)
     app.register_blueprint(root)
     return app
+
 
 @root.route("/", methods=["POST"])
 def inference():
@@ -34,7 +38,8 @@ def inference():
         # answers: (batch_size, num_queries_per_image) of strings
         data = pickle.loads(data)
 
-        images = [Image.open(BytesIO(d), formats=["jpeg"]) for d in data["images"]]
+        images = [Image.open(BytesIO(d), formats=["jpeg"])
+                  for d in data["images"]]
         queries = data["queries"]
 
         print(f"Got {len(images)} images, {len(queries[0])} queries per image")

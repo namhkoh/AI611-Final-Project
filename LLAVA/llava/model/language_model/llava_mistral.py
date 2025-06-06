@@ -20,12 +20,12 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 
 from transformers import AutoConfig, AutoModelForCausalLM, \
-                         MistralConfig, MistralModel, MistralForCausalLM
+    MistralConfig, MistralModel, MistralForCausalLM
 
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.generation.utils import GenerateOutput
 
-from LLAVA.llava.model.llava_arch import LlavaMetaModel, LlavaMetaForCausalLM
+from llava.model.llava_arch import LlavaMetaModel, LlavaMetaForCausalLM
 
 
 class LlavaMistralConfig(MistralConfig):
@@ -46,7 +46,8 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
         super(MistralForCausalLM, self).__init__(config)
         self.model = LlavaMistralModel(config)
 
-        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = nn.Linear(
+            config.hidden_size, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -153,6 +154,7 @@ class LlavaMistralForCausalLM(MistralForCausalLM, LlavaMetaForCausalLM):
         if image_sizes is not None:
             inputs['image_sizes'] = image_sizes
         return inputs
+
 
 AutoConfig.register("llava_mistral", LlavaMistralConfig)
 AutoModelForCausalLM.register(LlavaMistralConfig, LlavaMistralForCausalLM)
