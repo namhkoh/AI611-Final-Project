@@ -59,6 +59,18 @@ def load_llava(params_path, **kwargs):
     disable_torch_init()
     model_name = get_model_name_from_path(params_path)
     model_base = None
+
+    # Create a temporary directory for offloading if not specified
+    if 'offload_folder' not in kwargs:
+        import tempfile
+        temp_dir = tempfile.mkdtemp()
+        kwargs['offload_folder'] = temp_dir
+        print(f"Using temporary directory for model offloading: {temp_dir}")
+
+    # Add device_map="auto" if not specified to better handle large models
+    if 'device_map' not in kwargs:
+        kwargs['device_map'] = "auto"
+
     tokenizer, model, image_processor, context_len = load_pretrained_model(
         params_path, model_base, model_name, **kwargs)
     model.half()  # align with the format in ddpo-pytorch, using fp16

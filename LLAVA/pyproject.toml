@@ -1,23 +1,27 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "llava-server"
 version = "0.0.1"
+description = "LLAVA Server with FastAPI"
+authors = ["Khairul Makirin <khairulmmakirin@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.10"
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
-dependencies = [
-    "bert-score==0.3.13",
-    "flask==2.3.2",
-    "gunicorn==20.1.0",
-    "sentencepiece (>=0.2.0,<0.3.0)",
-    "accelerate (>=1.7.0,<2.0.0)",
-    "torchao (>=0.11.0,<0.12.0)",
-    "peft (>=0.15.2,<0.16.0)",
-    "pyvips (>=3.0.0,<4.0.0)",
-    "tqdm (>=4.67.1,<5.0.0)"
-]
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+bert-score = "0.3.13"
+uvicorn = "^0.22.0"
+sentencepiece = ">=0.2.0,<0.3.0"
+accelerate = ">=1.7.0,<2.0.0"
+torchao = ">=0.11.0,<0.12.0"
+peft = ">=0.15.2,<0.16.0"
+pyvips = ">=3.0.0,<4.0.0"
+tqdm = ">=4.67.1,<5.0.0"
+numpy = "^1.24.2"
+fastapi = {extras = ["standard"], version = "^0.115.12"}
+pillow = "^11.2.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"

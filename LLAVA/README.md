@@ -1,17 +1,19 @@
 # LLaVA Server
 
-Serves LLaVA inference using an HTTP server. Supports batched inference and caches the embeddings for each image in order to produce multiple responses per image more efficiently.
+Serves LLaVA inference using a FastAPI HTTP server. Supports batched inference and caches the embeddings for each image in order to produce multiple responses per image more efficiently.
 
 ## Installation
 Requires Python 3.10 or newer.
 
 ```bash
 cd LLAVA
-pip install -e .
+
+# Install dependencies using Poetry
+poetry install
 ```
 
 ## Open Port
-Open server port for communication with DDPO server.
+Open server port for communication with client applications.
 ```bash
 # Open port 8000
 sudo firewall-cmd --add-port=8000/tcp --permanent
@@ -22,17 +24,76 @@ sudo firewall-cmd --remove-port=8000/tcp --permanent
 sudo firewall-cmd --reload
 ```
 
-
-## RUN
+## Run FastAPI Server
 ```bash
-cd ..
-CUDA_VISIBLE_DEVICES=0 gunicorn -c LLAVA/gunicorn.conf.py "LLAVA.app:create_app()"
+# Run the FastAPI server using uvicorn
+cd LLAVA
+poetry run python app.py
+
+# Or run with explicit uvicorn command
+poetry run uvicorn app:app --host 0.0.0.0 --port 8000
 ```
--> GPU VRAM required : ~ 35GB\
--> Must modify `gunicorn.conf.py` to change the number of GPUs.(Currently set to use 1 GPU.)\
+-> GPU VRAM required : ~ 35GB
 
-If the LLava server terminal displays logs like the image below, it means the LLava code is running correctly on the server.
-![LLAVA](llava_server_log1.png)
+## Testing the API
+You can test the LLAVA server using the provided test script:
 
-When a request arrives from the DDPO execution server, you will see logs like the following.
-![LLAVA](llava_server_log2.png)
+```bash
+# Test with a local image
+poetry run python test.py --image /path/to/image.jpg --prompt "What do you see in this image?"
+```
+
+## API Format
+
+The API uses an OpenAI-compatible format:
+
+### Request
+
+```json
+{
+  "model": "llava-v1.5-7b",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What's in this image?"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAA..."
+          }
+        }
+      ]
+    }
+  ],
+  "max_tokens": 256
+}
+```
+
+### Response
+
+```json
+{
+  "model": "llava-v1.5-7b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The image shows a cat sitting on a windowsill."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  }
+}
+```
+
+When a request arrives at the LLAVA server, you will see logs showing the image count and query information.
