@@ -1,5 +1,5 @@
 from PIL import Image
-import io, traceback, requests, os
+import io, traceback, requests, os, base64
 import numpy as np
 import torch
 from typing import Iterable, List
