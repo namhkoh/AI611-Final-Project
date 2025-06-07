@@ -81,7 +81,7 @@ def prompt_image_alignment():
     }
 
     # rewards
-    config.reward_fn = "llava_bertscore"
+    config.reward_fn = "llava_bertscore2"
 
     config.per_prompt_stat_tracking = {
         "buffer_size": 32,
