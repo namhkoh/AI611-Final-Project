@@ -40,7 +40,10 @@ You can test the LLAVA server using the provided test script:
 
 ```bash
 # Test with a local image
-poetry run python test.py --image /path/to/image.jpg --prompt "What do you see in this image?"
+poetry run python test.py --image ./monkey.png --prompt "What do you see in this image?"
+
+# Test the Gemini inference
+poetry run python test.py --image ./monkey.png --prompt "What do you see in this image?" --url http://localhost:8000/gemini
 ```
 
 ## API Format
@@ -51,7 +54,7 @@ The API uses an OpenAI-compatible format:
 
 ```json
 {
-  "model": "llava-v1.5-7b",
+  "model": "llava-v1.5-7b", //gemini-2.0-flash
   "messages": [
     {
       "role": "user",
@@ -77,7 +80,7 @@ The API uses an OpenAI-compatible format:
 
 ```json
 {
-  "model": "llava-v1.5-7b",
+  "model": "llava-v1.5-7b", //gemini-2.0-flash
   "choices": [
     {
       "index": 0,
