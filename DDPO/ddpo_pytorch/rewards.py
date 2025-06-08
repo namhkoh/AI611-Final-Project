@@ -190,6 +190,7 @@ def llava_bertscore():
             all_info["outputs"] += np.array(response_data["outputs"], dtype=object).ravel().tolist()
 
         return np.array(all_scores), {k: np.array(v) for k, v in all_info.items()}
+    return _fn
 
 def llava_bertscore2():
     from io import BytesIO
@@ -365,5 +366,3 @@ def llava_bertscore2():
 
     return _fn
 
-
-    return _fn
