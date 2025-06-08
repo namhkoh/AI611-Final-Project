@@ -119,9 +119,9 @@ def inference(request: LlavaRequest):
         return JSONResponse(response_data, status_code=200)
 
     except Exception:
-        # Retry with Gemini if LLaVA fails
-        request.model = "gemini-2.0-flash"
-        return gemini_inference(request)
+        error = traceback.format_exc()
+        print(error)
+        return JSONResponse({"error": error}, status_code=500)
 
 
 @app.post("/gemini")
