@@ -7,11 +7,11 @@ from typing import Iterable, List
 from typing import Iterable, List
 import numpy as np
 
-from LLAVA.llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from LLAVA.llava.conversation import conv_templates
-from LLAVA.llava.model.builder import load_pretrained_model
-from LLAVA.llava.utils import disable_torch_init
-from LLAVA.llava.mm_utils import tokenizer_image_token, get_model_name_from_path
+from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from llava.conversation import conv_templates
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
+from llava.mm_utils import tokenizer_image_token, get_model_name_from_path
 
 from PIL import Image
 import math
@@ -42,29 +42,33 @@ def tokenizer_image_token_batch(prompts, tokenizer, image_token_index=IMAGE_TOKE
     """
     # For each prompt, use tokenizer_image_token to get the token id list (without returning a tensor)
     batch_encodings = [
-        tokenizer_image_token(prompt, tokenizer, image_token_index, return_tensors=None)
+        tokenizer_image_token(
+            prompt, tokenizer, image_token_index, return_tensors=None)
         for prompt in prompts
     ]
-    
+
     # Use pad_sequences to perform left-side padding on the token id lists to construct a tensor of uniform length.
-    padded_encodings = pad_sequences(batch_encodings, pad_token_id=tokenizer.pad_token, padding_side=tokenizer.padding_side)
-    
+    padded_encodings = pad_sequences(
+        batch_encodings, pad_token_id=tokenizer.pad_token, padding_side=tokenizer.padding_side)
+
     return torch.tensor(padded_encodings, dtype=torch.long)
 
 
-def load_llava(params_path):
+def load_llava(params_path, **kwargs):
     # Model
     disable_torch_init()
     model_name = get_model_name_from_path(params_path)
     model_base = None
-    tokenizer, model, image_processor, context_len = load_pretrained_model(params_path, model_base, model_name)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(
+        params_path, model_base, model_name, **kwargs)
     model.half()  # align with the format in ddpo-pytorch, using fp16
-    
+
     if getattr(model.config, 'mm_use_im_start_end', False):
-        image_tokens = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+        image_tokens = DEFAULT_IM_START_TOKEN + \
+            DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
     else:
         image_tokens = DEFAULT_IMAGE_TOKEN
-    
+
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
 
@@ -78,19 +82,22 @@ def load_llava(params_path):
         queries = np.array(queries)  # (batch_size, num_queries_per_image)
 
         # preprocess images
-        image_tensor = image_processor(images, return_tensors="pt")["pixel_values"]
+        image_tensor = image_processor(images, return_tensors="pt")[
+            "pixel_values"]
         images = image_tensor.half().cuda()
 
         # first, get the activations for the image tokens
-        initial_prompts = [PROMPT + image_tokens + " " for _ in range(len(images))]
-        
+        initial_prompts = [PROMPT + image_tokens +
+                           " " for _ in range(len(images))]
+
         # conv = conv_templates["vicuna_v1"].copy()
         # conv.append_message(conv.roles[0], initial_prompts[0])
         # conv.append_message(conv.roles[1], None)
         # for i in range(len(initial_prompts)):
         #     initial_prompts[i] = conv.get_prompt()
-        
-        initial_input_ids = tokenizer_image_token_batch(initial_prompts, tokenizer, IMAGE_TOKEN_INDEX).cuda()
+
+        initial_input_ids = tokenizer_image_token_batch(
+            initial_prompts, tokenizer, IMAGE_TOKEN_INDEX).cuda()
         initial_out = model(initial_input_ids, images=images, use_cache=True)
         initial_key_values = initial_out.past_key_values
 
@@ -107,11 +114,13 @@ def load_llava(params_path):
         ]
 
         # flatten queries into one big batch
-        flat_queries = queries.reshape(-1)  # (batch_size * num_queries_per_image)
+        # (batch_size * num_queries_per_image)
+        flat_queries = queries.reshape(-1)
 
         # prepare inputs for the queries
         prompts = [q + "###" for q in flat_queries]
-        input_ids = tokenizer_image_token_batch(prompts, tokenizer, IMAGE_TOKEN_INDEX).cuda()
+        input_ids = tokenizer_image_token_batch(
+            prompts, tokenizer, IMAGE_TOKEN_INDEX).cuda()
 
         # stop upon seeing any of these tokens
         stop_tokens = torch.as_tensor(
@@ -122,14 +131,17 @@ def load_llava(params_path):
 
         # generation loop
         output_ids = []
-        key_values = initial_key_values
-        finished = torch.zeros(input_ids.shape[0], dtype=torch.bool, device="cuda")
+        key_values = initial_out.past_key_values
+        finished = torch.zeros(
+            input_ids.shape[0], dtype=torch.bool, device="cuda")
         for i in range(MAX_TOKENS):
-            out = model(input_ids=input_ids, use_cache=True, past_key_values=key_values)
+            out = model(input_ids=input_ids, use_cache=True,
+                        past_key_values=key_values)
             key_values = out.past_key_values
             next_tokens = torch.argmax(out.logits[:, -1], dim=-1)
 
-            finished = finished | (next_tokens.unsqueeze(-1) == stop_tokens).any(dim=-1)
+            finished = finished | (
+                next_tokens.unsqueeze(-1) == stop_tokens).any(dim=-1)
 
             if finished.all():
                 break
@@ -148,7 +160,8 @@ def load_llava(params_path):
 
             if "Assistant:" in output:
                 output = output.split("Assistant:")[1]
-            output = output.split('.')[0] + '.'  # remove some extra interfering sentences from the LLaVA model output
+            # remove some extra interfering sentences from the LLaVA model output
+            output = output.split('.')[0] + '.'
             outputs_clean.append(output.strip())
 
         # reshape outputs back to (batch_size, num_queries_per_image)

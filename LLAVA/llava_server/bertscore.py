@@ -1,10 +1,10 @@
 from typing import Iterable, List
-from LLAVA.bert_score import BERTScorer
+from bert_score import BERTScorer
 import numpy as np
 
 
 def load_bertscore():
-    scorer = BERTScorer("microsoft/deberta-xlarge-mnli", use_fast_tokenizer=True)
+    scorer = BERTScorer("microsoft/deberta-v3-small")
 
     def compute_bertscore(
         candidates: Iterable[str], references: Iterable[str]
