@@ -1,45 +1,59 @@
-# DDPO Pytorch Version
+# AI611 Final Project
 
-This is an implementation of [Denoising Diffusion Policy Optimization (DDPO)](https://rl-diffusion.github.io/) in PyTorch with support for [low-rank adaptation (LoRA)](https://huggingface.co/docs/diffusers/training/lora). Unlike our original research code (which you can find [here](https://github.com/jannerm/ddpo)), this implementation runs on GPUs, and if LoRA is enabled, requires less than 10GB of GPU memory to finetune Stable Diffusion!
+## LLAVA Vision Language Model Server
 
-![DDPO](teaser.jpg)
+The project includes a FastAPI server for the LLAVA vision-language model that can process images and respond to text queries about them.
 
-## Installation
-Requires Python 3.10 or newer.
-
-```bash
-git clone git@github.com:namhkoh/AI611-Final-Project.git
-
-conda create -n ddpo
-conda activate ddpo
-
-cd DDPO    # for DDPO server setup
-cd LLAVA   # for LLaVA server setup
-```
-
-Hierarchical relationship between folders.
-```bash
-/home/user
-├── DDPO/(where codes should be run.)
-│   ├── ddpo_pytorch/
-│   ├── config/
-│   └── (etc.)
-└── LLAVA/
-    ├── bert_score/
-    ├── llava_server/
-    ├── llava/
-    └── (etc.)
-```
-## VLM Server
-Requires Python [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer)
+### Installation
 
 ```bash
+# Clone the repository (if you haven't already)
+git clone <repository-url>
+cd AI611-Final-Project
+
+# Install dependencies for the LLAVA server
 cd LLAVA
-
 poetry install
-poetry run flask run
+cd ..
 ```
 
+### Running the LLAVA Server
 
-## Notice
-Both train.py (DDPO) and app.py (LLAVA) must be run from inside the DDPO directory.
+```bash
+# Run the server using Python directly
+cd LLAVA
+poetry run python app.py
+
+# Or use uvicorn explicitly
+poetry run uvicorn LLAVA.app:app --host 0.0.0.0 --port 8000
+```
+
+### Testing the LLAVA Server
+
+The server exposes an API endpoint compatible with OpenAI's Vision API format:
+
+```bash
+# Use the provided test script
+cd LLAVA
+poetry run python test.py --image /path/to/image.jpg --prompt "Describe this image in detail."
+```
+
+The LLAVA server requires about 35GB of GPU VRAM to run efficiently.
+
+## Server API Documentation
+
+The LLAVA server accepts POST requests to the root endpoint (`/`) with a JSON payload matching the OpenAI Vision API format:
+
+- Images are sent as base64-encoded strings within the messages
+- Multiple images can be processed in a batch
+- Optional "answers" field can be provided to calculate BERTScore metrics
+
+For detailed API documentation, see the [LLAVA README.md](LLAVA/README.md).
+
+## Project Structure
+
+- `LLAVA/`: Contains the LLAVA model server implementation
+  - `app.py`: FastAPI server implementation
+  - `models.py`: Pydantic models for request/response validation
+  - `test.py`: Script for testing the server
+  - `llava_server/`: Core LLAVA model functionality

@@ -1,7 +1,10 @@
 import os
 import requests
+import json
+import base64
+from PIL import Image
 import io
-import pickle
+import argparse
 import tqdm
 
 from concurrent.futures import ThreadPoolExecutor
@@ -15,43 +18,96 @@ paths = ["monkey.png"]
 #          for f in os.listdir("test_images") if f.endswith(".JPEG")]
 
 
-def f(_):
-    for i in tqdm.tqdm(range(0, len(paths), BATCH_SIZE)):
-        batch_paths = paths[i: i + BATCH_SIZE]
-
-        jpeg_data = []
-        queries = []
-        answers = []
-        for path in batch_paths:
-            image = Image.open(path)
-
-            # Compress the images using JPEG
-            buffer = io.BytesIO()
-            image.save(buffer, format="JPEG", quality=80)
-            jpeg_data.append(buffer.getvalue())
-
-            queries.append([
-                "What animal is in this image?",
-            ])
-            answers.append(["a monkey is looking at the camera"])
-            # texts.append(["What item is lying on the table?"])
-
-        data = {"images": jpeg_data, "queries": queries, "answers": answers}
-        data_bytes = pickle.dumps(data)
-
-        # Send the JPEG data in an HTTP POST request to the server
-        url = "http://127.0.0.1:5000"
-        response = requests.post(url, data=data_bytes)
-
-        # Print the response from the server
-        response_data = pickle.loads(response.content)
-
-        for output, score in zip(response_data["outputs"], response_data["recall"]):
-            print(output)
-            print(score)
-            print("--")
+def encode_image_to_base64(image_path):
+    """Encode an image file as a base64 string"""
+    with open(image_path, "rb") as image_file:
+        image_data = image_file.read()
+        base64_encoded = base64.b64encode(image_data).decode("utf-8")
+        return f"data:image/jpeg;base64,{base64_encoded}"
 
 
-with ThreadPoolExecutor(max_workers=8) as executor:
-    for _ in executor.map(f, range(8)):
-        pass
+def test_vlm_server(image_path, prompt, server_url="http://localhost:8000"):
+    """Test the Vision Language Model server with an image and prompt"""
+
+    # Ensure image file exists
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+
+    # Encode the image to base64
+    base64_image = encode_image_to_base64(image_path)
+
+    # Create the OpenAI-like payload
+    payload = {
+        "model": "llava-v1.5-7b",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt,
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": base64_image},
+                    },
+                ],
+            }
+        ],
+        "max_tokens": 256,
+    }
+
+    # Optional: Add answers for BERTScore calculation
+    # payload["answers"] = [["Sample answer"]]
+
+    try:
+        # Send request to the server
+        print(f"Sending request to {server_url}")
+        print(f"Prompt: {prompt}")
+        print(f"Image: {image_path}")
+
+        response = requests.post(server_url, json=payload)
+
+        # Check response
+        if response.status_code == 200:
+            result = response.json()
+            print("\nServer Response:")
+            print(json.dumps(result, indent=2))
+
+            # Print the model's answer
+            if result.get("choices") and len(result["choices"]) > 0:
+                answer = result["choices"][0]["message"]["content"]
+                print("\nModel's answer:", answer)
+
+            # Print BERTScore if available
+            if "bertscore" in result:
+                print("\nBERTScore:")
+                print(f"F1: {result['bertscore']['f1']}")
+                print(f"Precision: {result['bertscore']['precision']}")
+                print(f"Recall: {result['bertscore']['recall']}")
+        else:
+            print(f"Error: {response.status_code}")
+            print(response.text)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Test VLM Server with an image and prompt"
+    )
+    parser.add_argument("--image", required=True,
+                        help="Path to the image file")
+    parser.add_argument(
+        "--prompt",
+        default="Describe what you see in this image.",
+        help="Prompt for the VLM",
+    )
+    parser.add_argument(
+        "--url", default="http://localhost:8000", help="URL of the VLM server"
+    )
+
+    args = parser.parse_args()
+
+    test_vlm_server(args.image, args.prompt, args.url)
