@@ -219,7 +219,7 @@ def llava_bertscore2():
     from google import genai
     from google.genai import types
 
-    dotenv.load_dotenv(dotenv_path=".env")
+    dotenv.load_dotenv("../.env")
 
     batch_size = 16
 
