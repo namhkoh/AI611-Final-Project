@@ -33,9 +33,13 @@ poetry run uvicorn LLAVA.app:app --host 0.0.0.0 --port 8000
 The server exposes an API endpoint compatible with OpenAI's Vision API format:
 
 ```bash
-# Use the provided test script
 cd LLAVA
-poetry run python test.py --image /path/to/image.jpg --prompt "Describe this image in detail."
+
+# Test with a local image
+poetry run python test.py --image ./monkey.png --prompt "What do you see in this image?"
+
+# Test the Gemini inference
+poetry run python test.py --image ./monkey.png --prompt "What do you see in this image?" --url http://localhost:8000/gemini
 ```
 
 The LLAVA server requires about 35GB of GPU VRAM to run efficiently.

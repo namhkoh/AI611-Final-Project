@@ -2,20 +2,7 @@ import os
 import requests
 import json
 import base64
-from PIL import Image
-import io
 import argparse
-import tqdm
-
-from concurrent.futures import ThreadPoolExecutor
-from PIL import Image
-
-BATCH_SIZE = 1
-
-# paths = glob.glob(f"target_paired_images_new_toykitchen7/*.jpg") * 100
-paths = ["monkey.png"]
-# paths = [os.path.join("test_images", f)
-#          for f in os.listdir("test_images") if f.endswith(".JPEG")]
 
 
 def encode_image_to_base64(image_path):
@@ -38,7 +25,7 @@ def test_vlm_server(image_path, prompt, server_url="http://localhost:8000"):
 
     # Create the OpenAI-like payload
     payload = {
-        "model": "llava-v1.5-7b",
+        "model": "gemini-2.0-flash",  # "llava-v1.5-7b",
         "messages": [
             {
                 "role": "user",
@@ -58,13 +45,14 @@ def test_vlm_server(image_path, prompt, server_url="http://localhost:8000"):
     }
 
     # Optional: Add answers for BERTScore calculation
-    # payload["answers"] = [["Sample answer"]]
+    payload["answers"] = [["A monkey looking at the camera"]]
 
     try:
         # Send request to the server
         print(f"Sending request to {server_url}")
         print(f"Prompt: {prompt}")
         print(f"Image: {image_path}")
+        print(f"Answers: {payload.get('answers', 'None')}")
 
         response = requests.post(server_url, json=payload)
 
@@ -101,7 +89,7 @@ if __name__ == "__main__":
                         help="Path to the image file")
     parser.add_argument(
         "--prompt",
-        default="Describe what you see in this image.",
+        default="What is happening in this image?",
         help="Prompt for the VLM",
     )
     parser.add_argument(

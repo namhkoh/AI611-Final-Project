@@ -1,14 +1,20 @@
 from PIL import Image
-import io, traceback, requests, os, base64
+import io
+import traceback
+import requests
+import os
+import base64
 import numpy as np
 import torch
 from typing import Iterable, List
 from .bert_score import BERTScorer
 
+
 def jpeg_incompressibility():
     def _fn(images, prompts, metadata):
         if isinstance(images, torch.Tensor):
-            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = (images * 255).round().clamp(0,
+                                                  255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
         images = [Image.fromarray(image) for image in images]
         buffers = [io.BytesIO() for _ in images]
@@ -68,11 +74,14 @@ def llava_strict_satisfaction():
     def _fn(images, prompts, metadata):
         del prompts
         if isinstance(images, torch.Tensor):
-            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = (images * 255).round().clamp(0,
+                                                  255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
 
-        images_batched = np.array_split(images, np.ceil(len(images) / batch_size))
-        metadata_batched = np.array_split(metadata, np.ceil(len(metadata) / batch_size))
+        images_batched = np.array_split(
+            images, np.ceil(len(images) / batch_size))
+        metadata_batched = np.array_split(
+            metadata, np.ceil(len(metadata) / batch_size))
 
         all_scores = []
         all_info = {
@@ -137,11 +146,14 @@ def llava_bertscore():
     def _fn(images, prompts, metadata):
         del metadata
         if isinstance(images, torch.Tensor):
-            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = (images * 255).round().clamp(0,
+                                                  255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
 
-        images_batched = np.array_split(images, np.ceil(len(images) / batch_size))
-        prompts_batched = np.array_split(prompts, np.ceil(len(prompts) / batch_size))
+        images_batched = np.array_split(
+            images, np.ceil(len(images) / batch_size))
+        prompts_batched = np.array_split(
+            prompts, np.ceil(len(prompts) / batch_size))
 
         all_scores = []
         all_info = {
@@ -177,29 +189,43 @@ def llava_bertscore():
 
             # use the recall score as the reward
             # scores = np.array(response_data["recall"]).squeeze()
-            scores = np.array(response_data["recall"], dtype=float).ravel()     # 1) np.array(...) 자체가 1차원 배열이 되도록 하고, 절대 스칼라가 되지 않게 ravel() 사용
-            all_scores += scores.tolist()           # 이제 scores는 항상 (batch,) 모양의 ndarray → .tolist()는 리스트를 반환
+            # 1) np.array(...) 자체가 1차원 배열이 되도록 하고, 절대 스칼라가 되지 않게 ravel() 사용
+            scores = np.array(response_data["recall"], dtype=float).ravel()
+            # 이제 scores는 항상 (batch,) 모양의 ndarray → .tolist()는 리스트를 반환
+            all_scores += scores.tolist()
 
             # save the precision and f1 scores for analysis
             # all_info["precision"] += (np.array(response_data["precision"]).squeeze().tolist())
             # all_info["f1"] += np.array(response_data["f1"]).squeeze().tolist()
             # all_info["outputs"] += np.array(response_data["outputs"]).squeeze().tolist()
 
-            all_info["precision"] += np.array(response_data["precision"], dtype=float).ravel().tolist()
-            all_info["f1"] += np.array(response_data["f1"], dtype=float).ravel().tolist()
-            all_info["outputs"] += np.array(response_data["outputs"], dtype=object).ravel().tolist()
+            all_info["precision"] += np.array(
+                response_data["precision"], dtype=float).ravel().tolist()
+            all_info["f1"] += np.array(response_data["f1"],
+                                       dtype=float).ravel().tolist()
+            all_info["outputs"] += np.array(response_data["outputs"],
+                                            dtype=object).ravel().tolist()
 
         return np.array(all_scores), {k: np.array(v) for k, v in all_info.items()}
     return _fn
 
+
 def llava_bertscore2():
-    from io import BytesIO
+    import os
     import pickle
+    import dotenv
+
+    from io import BytesIO
+    from google import genai
+    from google.genai import types
+
+    dotenv.load_dotenv("../.env")
 
     batch_size = 16
 
     def load_bertscore():
-        scorer = BERTScorer("microsoft/deberta-xlarge-mnli", use_fast_tokenizer=True)
+        scorer = BERTScorer("microsoft/deberta-xlarge-mnli",
+                            use_fast_tokenizer=True)
         print("BERT Loaded")
 
         def compute_bertscore(
@@ -209,34 +235,61 @@ def llava_bertscore2():
             return precision.numpy(), recall.numpy(), f1.numpy()
 
         return compute_bertscore
-    
+
     def llava(image_path: str, prompt: str, endpoint: str = "https://silkworm-immortal-lively.ngrok-free.app/v1/chat/completions"):
-        with open(image_path, "rb") as f:
-            image_bytes = f.read()
-        
-        b64 = base64.b64encode(image_bytes).decode("ascii")
-        data_uri = f"data:image/jpeg;base64,{b64}"
-
-        payload = {
-            "model": "llava-hf/llava-1.5-7b-hf",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        { "type": "text", "text": prompt },
-                        { "type": "image_url", "image_url": { "url": data_uri } },
-                    ]
-                }
-            ]
-        }
-
-        headers = { "Content-Type": "application/json" }
-        response = requests.post(endpoint, json=payload, headers=headers)
-
         try:
-            result = response.json()
-            message = result['choices'][0]['message']['content']
-            return message
+            with open(image_path, "rb") as f:
+                image_bytes = f.read()
+
+            b64 = base64.b64encode(image_bytes).decode("ascii")
+            data_uri = f"data:image/jpeg;base64,{b64}"
+
+            payload = {
+                "model": "llava-hf/llava-1.5-7b-hf",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": data_uri}},
+                        ]
+                    }
+                ]
+            }
+
+            headers = {"Content-Type": "application/json"}
+
+            # Retry for a maximum of n times
+            retry_limit = 3
+            retry_count = 0
+            while retry_count < retry_limit:
+                response = requests.post(
+                    endpoint, json=payload, headers=headers)
+
+                if response.status_code != 200:
+                    retry_count += 1
+                    print(
+                        f"Request failed with status {response.status_code}. Retrying {retry_count}/{retry_limit}...")
+                    continue
+
+                result = response.json()
+                message = result['choices'][0]['message']['content']
+                return message
+
+            # Try gemini API after multiple failed attempts
+            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+            # Generate Gemini response
+            return client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type="image/jpeg",
+                    ),
+                    prompt,
+                ],
+            ).text
         except Exception as e:
             return f"Error: {e}\nRaw response: {response.text}"
 
@@ -245,11 +298,14 @@ def llava_bertscore2():
     def _fn(images, prompts, metadata):
         del metadata
         if isinstance(images, torch.Tensor):
-            images = (images * 255).round().clamp(0, 255).to(torch.uint8).cpu().numpy()
+            images = (images * 255).round().clamp(0,
+                                                  255).to(torch.uint8).cpu().numpy()
             images = images.transpose(0, 2, 3, 1)  # NCHW -> NHWC
 
-        images_batched = np.array_split(images, np.ceil(len(images) / batch_size))
-        prompts_batched = np.array_split(prompts, np.ceil(len(prompts) / batch_size))
+        images_batched = np.array_split(
+            images, np.ceil(len(images) / batch_size))
+        prompts_batched = np.array_split(
+            prompts, np.ceil(len(prompts) / batch_size))
 
         all_scores = []
         all_info = {
@@ -280,20 +336,22 @@ def llava_bertscore2():
             retry = False
             while not retry:
                 try:
-                        # expects a dict with "images", "queries", and optionally "answers"
-                        # images: (batch_size,) of JPEG bytes
-                        # queries: (batch_size, num_queries_per_image) of strings
-                        # answers: (batch_size, num_queries_per_image) of strings
+                    # expects a dict with "images", "queries", and optionally "answers"
+                    # images: (batch_size,) of JPEG bytes
+                    # queries: (batch_size, num_queries_per_image) of strings
+                    # answers: (batch_size, num_queries_per_image) of strings
 
                     data = pickle.loads(data_bytes)
 
-                    images = [Image.open(BytesIO(d), formats=["jpeg"]) for d in data["images"]]
+                    images = [Image.open(BytesIO(d), formats=["jpeg"])
+                              for d in data["images"]]
                     queries = data["queries"]
 
-                    print(f"Got {len(images)} images, {len(queries[0])} queries per image")
+                    print(
+                        f"Got {len(images)} images, {len(queries[0])} queries per image")
                     # queries = np.array(queries)  # (batch_size, num_queries_per_image)
                     # print("queries : ", queries)
-                    
+
                     save_dir = "./img_data"
                     os.makedirs(save_dir, exist_ok=True)
                     outputs = []
@@ -325,7 +383,8 @@ def llava_bertscore2():
                         )
 
                         for key in ["precision", "recall", "f1"]:
-                            response[key] = response[key].reshape(output_shape).tolist()
+                            response[key] = response[key].reshape(
+                                output_shape).tolist()
                         # print("response1 : ", response)
 
                     # returns: a dict with "outputs" and optionally "scores"
@@ -350,19 +409,23 @@ def llava_bertscore2():
             # print("response data : ", response_data)
             # use the recall score as the reward
             # scores = np.array(response_data["recall"]).squeeze()
-            scores = np.array(response_data["recall"], dtype=float).ravel()     # 1) np.array(...) 자체가 1차원 배열이 되도록 하고, 절대 스칼라가 되지 않게 ravel() 사용
-            all_scores += scores.tolist()           # 이제 scores는 항상 (batch,) 모양의 ndarray → .tolist()는 리스트를 반환
+            # 1) np.array(...) 자체가 1차원 배열이 되도록 하고, 절대 스칼라가 되지 않게 ravel() 사용
+            scores = np.array(response_data["recall"], dtype=float).ravel()
+            # 이제 scores는 항상 (batch,) 모양의 ndarray → .tolist()는 리스트를 반환
+            all_scores += scores.tolist()
 
             # save the precision and f1 scores for analysis
             # all_info["precision"] += (np.array(response_data["precision"]).squeeze().tolist())
             # all_info["f1"] += np.array(response_data["f1"]).squeeze().tolist()
             # all_info["outputs"] += np.array(response_data["outputs"]).squeeze().tolist()
 
-            all_info["precision"] += np.array(response_data["precision"], dtype=float).ravel().tolist()
-            all_info["f1"] += np.array(response_data["f1"], dtype=float).ravel().tolist()
-            all_info["outputs"] += np.array(response_data["outputs"], dtype=object).ravel().tolist()
+            all_info["precision"] += np.array(
+                response_data["precision"], dtype=float).ravel().tolist()
+            all_info["f1"] += np.array(response_data["f1"],
+                                       dtype=float).ravel().tolist()
+            all_info["outputs"] += np.array(response_data["outputs"],
+                                            dtype=object).ravel().tolist()
 
         return np.array(all_scores), {k: np.array(v) for k, v in all_info.items()}
 
     return _fn
-

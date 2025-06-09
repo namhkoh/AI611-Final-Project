@@ -1,17 +1,24 @@
+import os
+import base64
+import numpy as np
+import uvicorn
+import traceback
+import dotenv
+
 from PIL import Image
 from io import BytesIO
-import traceback
-from llava_server.llava import load_llava
-from llava_server.bertscore import load_bertscore
-import numpy as np
-import os
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-import uvicorn
-import base64
+
 from models import LlavaRequest, LlavaResponse
+from llava_server.llava import load_llava
+from llava_server.bertscore import load_bertscore
+
+from google import genai
 
 os.environ["NUMEXPR_MAX_THREADS"] = "64"
+dotenv.load_dotenv()
 
 app = FastAPI()
 # Create a dedicated directory for model offloading
@@ -27,6 +34,8 @@ print("LLaVA model loaded successfully!")
 print("Loading BERTScore function...")
 BERTSCORE_FN = load_bertscore()
 print("BERTScore function loaded successfully!")
+
+GEMINI_API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY")
 
 
 def extract_images_and_prompts(messages):
@@ -115,10 +124,86 @@ def inference(request: LlavaRequest):
         return JSONResponse({"error": error}, status_code=500)
 
 
-# Helper function to get current time
-def import_time():
-    import time
-    return time.time()
+@app.post("/gemini")
+def gemini_inference(request: LlavaRequest):
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+
+        # Parse the OpenAI-like request format
+        images_data, queries = extract_images_and_prompts(request.messages)
+
+        # Convert image bytes to PIL Images
+        images = [Image.open(BytesIO(img_data)) for img_data in images_data]
+
+        print(
+            f"Got {len(images)} images, {len(queries[0]) if queries else 0} queries per image")
+
+        # Upload images using google File API and send the request to Gemini
+        outputs = []
+        for image in images:
+            image_bytes = BytesIO()
+            image.save(image_bytes, format='PNG')
+            image_bytes.seek(0)
+
+            # Upload the image to Google Gemini
+            image_file = client.files.upload(
+                file=image_bytes,
+                config={
+                    "mime_type": "image/png",
+                    "display_name": "image.png"
+                }
+            )
+
+            # Generate Gemini response
+            outputs.append(
+                client.models.generate_content(
+                    model=request.model,
+                    contents=[image_file, queries[0]],
+                ).text
+            )
+
+        # Prepare the OpenAI-like response
+        response_data = {
+            "model": request.model,
+            "choices": [
+                {
+                    "index": i,
+                    "message": {
+                        "role": "assistant",
+                        "content": output if output else ""
+                    },
+                    "finish_reason": "stop"
+                }
+                for i, output in enumerate(outputs)
+            ],
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0
+            }
+        }
+
+        # If answers are provided, calculate BERTScore
+        if request.answers:
+            print("Running bertscore...")
+            precision, recall, f1 = BERTSCORE_FN(
+                outputs,
+                np.array(request.answers).reshape(-1).tolist(),
+            )
+
+            response_data["bertscore"] = {
+                "precision": precision.tolist(),
+                "recall": recall.tolist(),
+                "f1": f1.tolist()
+            }
+
+        # Return the response as JSON
+        return JSONResponse(response_data, status_code=200)
+
+    except Exception:
+        error = traceback.format_exc()
+        print(error)
+        return JSONResponse({"error": error}, status_code=500)
 
 
 if __name__ == "__main__":
